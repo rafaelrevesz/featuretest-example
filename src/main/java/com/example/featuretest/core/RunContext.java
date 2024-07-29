@@ -1,0 +1,103 @@
+package com.example.featuretest.core;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Component
+public class RunContext {
+    public static final String FEATURE_TEST_POSTFIX = "-FT-";
+
+    @Getter
+    private final String runId;
+    @Getter
+    @Setter
+    private HttpStatusCode httpStatus;
+    private Map<Class, Map<String, Object>> createdResources = new HashMap<>();
+    @Getter
+    private Map<Class, String> lastCreatedResourceNames = new HashMap<>();
+
+    public RunContext() {
+        runId = UUID.randomUUID().toString();
+    }
+
+    public <T> T createdResource(Class<T> clazz, String name) {
+        if (!createdResources.containsKey(clazz) || !createdResources.get(clazz).containsKey(name)) {
+            throw new IllegalArgumentException("No stored resource present for class " + clazz + " with the name " + name);
+        }
+        return (T) createdResources.get(clazz).get(name);
+    }
+
+    public <T> void addCreatedResource(String name, T resource) {
+        createdResources.computeIfAbsent(resource.getClass(), s -> new HashMap<>()).put(name, resource);
+        lastCreatedResourceNames.put(resource.getClass(), name);
+    }
+
+    public <T> T lastCreatedResource(Class<T> clazz) {
+        if (!lastCreatedResourceNames.containsKey(clazz)) {
+            throw new IllegalArgumentException("No stored resource present for class " + clazz);
+        }
+
+        return createdResource(clazz, lastCreatedResourceNames.get(clazz));
+    }
+
+    public <T> boolean isResourceAlreadyCreated(Class<T> clazz) {
+        return lastCreatedResourceNames.containsKey(clazz);
+    }
+
+    public String lastCreatedResourceName(Class clazz) {
+        if (!lastCreatedResourceNames.containsKey(clazz)) {
+            throw new IllegalArgumentException("No stored resource present for class " + clazz);
+        }
+
+        return lastCreatedResourceNames.get(clazz);
+    }
+
+    public void removeCreatedResource(String name, Class clazz) {
+        if (createdResources.containsKey(clazz)) {
+            createdResources.get(clazz).remove(name);
+        }
+    }
+
+    public <T> Map<String, T> getResourceMap(Class<T> clazz) {
+        if (!createdResources.containsKey(clazz)) {
+            return new HashMap<>();
+        } else {
+            return createdResources.get(clazz).entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> (T)e.getValue()));
+        }
+    }
+
+    public void resetCreatedResources() {
+        createdResources.clear();
+        lastCreatedResourceNames.clear();
+    }
+
+    public String identifierWithRunId(String id) {
+        if (id == null) {
+            return null;
+        }
+        return id + runIdPostfix();
+    }
+
+    public String identifierWithoutRunId(String id) {
+        if (id == null) {
+            return null;
+        }
+        return id.replace(runIdPostfix(), "");
+    }
+
+    private String runIdPostfix() {
+        return "-" + runId + FEATURE_TEST_POSTFIX;
+    }
+
+    public boolean isAFeatureTestIdentifier(String id) {
+        return id != null && id.endsWith(FEATURE_TEST_POSTFIX);
+    }
+}

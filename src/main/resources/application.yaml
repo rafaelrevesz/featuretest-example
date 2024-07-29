@@ -1,0 +1,35 @@
+example:
+  api-service:
+    url: http://localhost:8080/b
+    personae:
+      Adam:
+        type: administrator
+        description: application administrator
+        login: true
+        email: adam.example@featuretest.com
+        password: xxxx
+      Mike:
+        type: maintainer
+        description: application maintainer
+        login: true
+        email: mike.example@featuretest.com
+        password: xxxx
+      Sue:
+        type: superadmin
+        description: application super administrator
+        login: true
+        email: sue.example@featuretest.com
+        password: xxx
+      Hacktor:
+        type: hacker
+        description: does not have access to the application
+        login: false
+        email: hacktor.example@featuretest.com
+        password: h6ck3rp@ssw0rd
+
+authorization:
+  enabled: true
+  method: BASIC
+  oauth2:
+    client: example-app
+    access-token-endpoint: https://auth.example.cloud/realms/example/protocol/openid-connect/token
